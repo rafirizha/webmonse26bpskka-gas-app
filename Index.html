@@ -1,0 +1,2052 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring Petugas SE2026 KKA</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fff8f1;
+      --panel: #fffdfa;
+      --panel-2: #fff1e5;
+      --line: #f0d9c4;
+      --line-strong: #d9a57b;
+      --text: #1f2933;
+      --muted: #5b6470;
+      --faint: #7b8794;
+      --accent: #dd620a;
+      --accent-dark: #9b4205;
+      --accent-soft: #ffe2c7;
+      --warning: oklch(68% 0.13 72);
+      --danger: oklch(56% 0.16 28);
+      --danger-soft: oklch(92% 0.045 28);
+      --shadow: 0 18px 50px rgba(93, 58, 25, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    .auth-screen {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(280px, 440px) minmax(320px, 1fr);
+    }
+
+    .auth-panel {
+      display: flex;
+      align-items: center;
+      padding: 48px;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 360px;
+    }
+
+    .auth-aside {
+      display: grid;
+      place-items: center;
+      padding: 48px;
+    }
+
+    .auth-hero {
+      width: min(720px, 100%);
+      display: grid;
+      gap: 26px;
+    }
+
+    .auth-hero-logo {
+      width: 148px;
+      height: auto;
+      display: block;
+    }
+
+    .auth-kicker {
+      width: fit-content;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--accent-dark);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .auth-title {
+      max-width: 680px;
+      color: var(--text);
+      font-size: 44px;
+      line-height: 1.05;
+      letter-spacing: 0;
+      margin-bottom: 14px;
+    }
+
+    .auth-lead {
+      max-width: 600px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .auth-proof-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 640px;
+    }
+
+    .auth-proof {
+      min-height: 104px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 253, 250, 0.78);
+      padding: 16px;
+    }
+
+    .auth-proof strong {
+      display: block;
+      color: var(--accent-dark);
+      font-size: 28px;
+      line-height: 1;
+      margin: 8px 0;
+    }
+
+    .auth-note {
+      max-width: 640px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      padding: 14px 16px;
+      color: var(--muted);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      overflow: hidden;
+    }
+
+    .brand-mark img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: 20px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 15px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .fine {
+      color: var(--faint);
+      font-size: 12px;
+    }
+
+    .app-footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font-size: 12px;
+    }
+
+    .app-footer a {
+      color: var(--accent-dark);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .app-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .form-stack {
+      display: grid;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    label {
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      background: var(--panel);
+      color: var(--text);
+      padding: 9px 11px;
+      outline: none;
+      transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+    }
+
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(221, 98, 10, 0.18);
+    }
+
+    input[readonly] {
+      background: var(--panel-2);
+      color: var(--muted);
+    }
+
+    .btn {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 7px;
+      padding: 9px 14px;
+      background: var(--accent);
+      color: var(--panel);
+      cursor: pointer;
+      font-weight: 800;
+      text-decoration: none;
+      transition: background 160ms ease-out, transform 160ms ease-out;
+    }
+
+    .btn:hover {
+      background: var(--accent-dark);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn.secondary {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line-strong);
+    }
+
+    .btn.secondary:hover {
+      background: var(--panel-2);
+    }
+
+    .btn.danger {
+      background: var(--danger);
+      color: var(--panel);
+    }
+
+    .btn.full {
+      width: 100%;
+    }
+
+    .btn:disabled,
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 244px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      padding: 24px 18px;
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+    }
+
+    .user-chip {
+      display: grid;
+      gap: 3px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+    }
+
+    .role {
+      width: fit-content;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .nav-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-item {
+      width: 100%;
+      min-height: 38px;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 750;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+
+    .sidebar-actions {
+      margin-top: auto;
+      display: grid;
+      gap: 8px;
+    }
+
+    .main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 28px;
+    }
+
+    #content {
+      flex: 1;
+    }
+
+    .page-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .page-title {
+      display: grid;
+      gap: 5px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid.cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 8px 28px rgba(93, 58, 25, 0.08);
+      padding: 18px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 15px;
+    }
+
+    .metric {
+      min-height: 104px;
+      display: grid;
+      align-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      padding: 16px;
+    }
+
+    .metric strong {
+      color: var(--accent-dark);
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 880px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    td {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .summary-row:last-child {
+      border-bottom: 0;
+    }
+
+    .summary-row strong {
+      color: var(--accent-dark);
+    }
+
+    .progress {
+      display: grid;
+      gap: 5px;
+      min-width: 128px;
+    }
+
+    .progress-track {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--panel-2);
+    }
+
+    .progress-fill {
+      height: 100%;
+      min-width: 0;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .empty {
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      padding: 22px;
+      color: var(--muted);
+      background: var(--panel-2);
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 10;
+      display: none;
+      width: min(360px, calc(100vw - 36px));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 13px 14px;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .toast.show {
+      display: block;
+    }
+
+    .toast.error {
+      border-color: oklch(76% 0.09 28);
+      background: var(--danger-soft);
+      color: oklch(35% 0.12 28);
+    }
+
+    .span-2 {
+      grid-column: span 2;
+    }
+
+    .span-3 {
+      grid-column: span 3;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .chart-box {
+      height: 280px;
+    }
+
+    @media (max-width: 1180px) {
+      .auth-title {
+        font-size: 38px;
+      }
+
+      .auth-proof-grid {
+        grid-template-columns: 1fr;
+        max-width: 360px;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .auth-screen,
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-aside {
+        display: none;
+      }
+
+      .auth-panel {
+        min-height: 100vh;
+        border-right: 0;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .nav-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .sidebar-actions {
+        margin-top: 0;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid.cols-2,
+      .grid.cols-3,
+      .grid.cols-4,
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .span-2,
+      .span-3 {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .main,
+      .auth-panel {
+        padding: 22px;
+      }
+
+      .page-head,
+      .panel-head {
+        display: grid;
+      }
+
+      .nav-list {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="root"></div>
+
+  <script>
+    const WEBMON_LOGO_SRC = "data:image/png;base64,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";
+
+    const KECAMATAN_ANAMBAS = [
+      "Jemaja",
+      "Jemaja Barat",
+      "Jemaja Timur",
+      "Siantan Selatan",
+      "Siantan",
+      "Siantan Timur",
+      "Siantan Tengah",
+      "Palmatak",
+      "Siantan Utara",
+      "Kute Siantan"
+    ];
+
+    const DESA_ANAMBAS = {
+      "Jemaja": ["Mampok", "Letung", "Rewak", "Air Biru", "Landak", "Batu Berapit"],
+      "Jemaja Barat": ["Keramut", "Impol", "Sunggak"],
+      "Jemaja Timur": ["Bukit Padi", "Genting Pulur", "Ulu Maras", "Kuala Maras"],
+      "Siantan Selatan": ["Kiabu", "Tiangau", "Air Bini", "Mengkait", "Telaga", "Telaga Kecil", "Lingat"],
+      "Siantan": ["Tarempa", "Tarempa Selatan", "Tarempa Barat Daya", "Tarempa Barat", "Tarempa Timur", "Pesisir Timur", "Sri Tanjung"],
+      "Siantan Timur": ["Serat", "Air Putih", "Nyamuk", "Batu Belah", "Munjan", "Temburun"],
+      "Siantan Tengah": ["Air Asuk", "Air Sena", "Teluk Siantan", "Lidi", "Liuk", "Teluk Sunting"],
+      "Palmatak": ["Candi", "Tebang", "Ladan", "Putik", "Piabung", "Langir", "Belibak"],
+      "Siantan Utara": ["Mubur", "Bayat", "Piasan"],
+      "Kute Siantan": ["Payalaman", "Teluk Bayur", "Batu Ampar", "Matak", "Payamaram"]
+    };
+
+    let sessionToken = sessionStorage.getItem("se2026_session_token") || "";
+    let currentUser = null;
+    let store = emptyStore();
+    let currentView = "dashboard";
+    let progressChart = null;
+    let dashboardFilters = {
+      pml_id: "",
+      petugas_id: "",
+      tanggal: ""
+    };
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    async function init() {
+      if (sessionToken) {
+        renderLogin(true);
+
+        try {
+          const response = await runServer("getBootstrapData", sessionToken);
+          currentUser = response.user;
+          store = normalizeStore(response.data);
+          renderShell();
+        } catch (error) {
+          sessionStorage.removeItem("se2026_session_token");
+          sessionToken = "";
+          renderLogin(false);
+        }
+
+        return;
+      }
+
+      renderLogin(false);
+    }
+
+    function renderLogin(checkingSession) {
+      destroyChart();
+
+      document.getElementById("root").innerHTML = `
+        <main class="auth-screen">
+          <section class="auth-panel">
+            <div class="auth-card">
+              <div class="brand">
+                ${logoMarkup()}
+                <span>Monitoring SE2026 KKA</span>
+              </div>
+              <h1>Masuk</h1>
+              <p class="muted">Gunakan akun PML atau admin yang sudah dibuat.</p>
+
+              <form id="loginForm" class="form-stack">
+                <div class="field">
+                  <label for="username">Username</label>
+                  <input id="username" name="username" autocomplete="username" required ${checkingSession ? "disabled" : ""}>
+                </div>
+                <div class="field">
+                  <label for="password">Password</label>
+                  <input id="password" name="password" type="password" autocomplete="current-password" required ${checkingSession ? "disabled" : ""}>
+                </div>
+                <button class="btn full" type="submit" ${checkingSession ? "disabled" : ""}>
+                  ${checkingSession ? "Memeriksa sesi" : "Masuk"}
+                </button>
+              </form>
+              ${footerMarkup()}
+            </div>
+          </section>
+          <section class="auth-aside">
+            <div class="auth-hero">
+              <img class="auth-hero-logo" src="${WEBMON_LOGO_SRC}" alt="Logo Webmon">
+              <div>
+                <div class="auth-kicker">Webmon SE2026</div>
+                <h1 class="auth-title">Monitoring Petugas Sensus Ekonomi 2026</h1>
+                <p class="auth-lead">
+                  Sistem monitoring lapangan BPS Kabupaten Kepulauan Anambas untuk memantau progres petugas, wilayah kerja, dan laporan harian.
+                </p>
+              </div>
+              <div class="auth-proof-grid">
+                <div class="auth-proof">
+                  <span class="fine">Pengguna</span>
+                  <strong>11</strong>
+                  <span class="muted">PML</span>
+                </div>
+                <div class="auth-proof">
+                  <span class="fine">Petugas</span>
+                  <strong>40</strong>
+                  <span class="muted">PPL</span>
+                </div>
+                <div class="auth-proof">
+                  <span class="fine">Periode</span>
+                  <strong>75</strong>
+                  <span class="muted">Hari sensus</span>
+                </div>
+              </div>
+              <div class="auth-note">
+                Data tersimpan di Google Spreadsheet dan dapat dipantau melalui dashboard setelah login.
+              </div>
+            </div>
+          </section>
+        </main>
+      `;
+
+      const loginForm = document.getElementById("loginForm");
+
+      if (loginForm) {
+        loginForm.addEventListener("submit", handleLogin);
+      }
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const payload = formValues(form);
+
+      setFormBusy(form, true);
+
+      try {
+        const response = await runServer("login", payload);
+        sessionToken = response.token;
+        currentUser = response.user;
+        store = normalizeStore(response.data);
+        currentView = "dashboard";
+        sessionStorage.setItem("se2026_session_token", sessionToken);
+        renderShell();
+        showToast("Login berhasil.");
+      } catch (error) {
+        showToast(error.message || "Login gagal.", "error");
+      } finally {
+        setFormBusy(form, false);
+      }
+    }
+
+    function renderShell() {
+      const navItems = [
+        { id: "dashboard", label: "Dashboard" },
+        { id: "daily", label: "Laporan Harian" },
+        { id: "tasks", label: "Wilayah Kerja" },
+        { id: "petugas", label: "Petugas" },
+        ...(isAdmin() ? [{ id: "admin", label: "Admin" }] : []),
+        { id: "account", label: "Akun" }
+      ];
+
+      if (!navItems.some((item) => item.id === currentView)) {
+        currentView = "dashboard";
+      }
+
+      document.getElementById("root").innerHTML = `
+        <div class="app-shell">
+          <aside class="sidebar">
+            <div>
+              <div class="brand" style="margin-bottom:14px">
+                ${logoMarkup()}
+                <span>Monitoring SE2026</span>
+              </div>
+              <div class="user-chip">
+                <strong>${escapeHtml(currentUser.nama)}</strong>
+                <span class="fine">${escapeHtml(currentUser.username)}</span>
+                <span class="role">${escapeHtml(currentUser.role)}</span>
+              </div>
+            </div>
+            <nav class="nav-list" aria-label="Navigasi utama">
+              ${navItems.map((item) => `
+                <button class="nav-item ${item.id === currentView ? "active" : ""}" type="button" data-view="${item.id}">
+                  ${item.label}
+                </button>
+              `).join("")}
+            </nav>
+            <div class="sidebar-actions">
+              <button id="refreshButton" class="btn secondary" type="button">Refresh</button>
+              <button id="logoutButton" class="btn secondary" type="button">Keluar</button>
+            </div>
+          </aside>
+          <main class="main">
+            <div id="content"></div>
+            ${footerMarkup()}
+          </main>
+        </div>
+      `;
+
+      document.querySelectorAll("[data-view]").forEach((button) => {
+        button.addEventListener("click", () => {
+          currentView = button.dataset.view;
+          renderShell();
+        });
+      });
+
+      document.getElementById("refreshButton").addEventListener("click", refreshData);
+      document.getElementById("logoutButton").addEventListener("click", handleLogout);
+
+      renderCurrentView();
+    }
+
+    function renderCurrentView() {
+      const content = document.getElementById("content");
+
+      if (!content) {
+        return;
+      }
+
+      destroyChart();
+
+      if (currentView === "dashboard") {
+        renderDashboard(content);
+      } else if (currentView === "daily") {
+        renderDaily(content);
+      } else if (currentView === "tasks") {
+        renderTasks(content);
+      } else if (currentView === "petugas") {
+        renderPetugas(content);
+      } else if (currentView === "admin") {
+        renderAdmin(content);
+      } else {
+        renderAccount(content);
+      }
+    }
+
+    function renderDashboard(content) {
+      const filteredTasks = getFilteredTasks(dashboardFilters);
+      const summary = getSummary(filteredTasks, dashboardFilters);
+      const completed = filteredTasks.filter((task) => getTaskProgress(task, dashboardFilters) >= 100).length;
+      const inProgress = filteredTasks.filter((task) => {
+        const progress = getTaskProgress(task, dashboardFilters);
+        return progress > 0 && progress < 100;
+      }).length;
+      const pending = filteredTasks.filter((task) => getTaskProgress(task, dashboardFilters) === 0).length;
+
+      content.innerHTML = `
+        ${pageHead("Dashboard", "Pantauan wilayah kerja dan laporan harian.", "")}
+        <section class="panel">
+          <div class="filters">
+            <div class="field ${isAdmin() ? "" : "hidden"}">
+              <label for="filterPml">PML</label>
+              <select id="filterPml">
+                <option value="">Semua PML</option>
+                ${store.pml.map((pml) => option(pml.pml_id, pml.nama_pml, dashboardFilters.pml_id)).join("")}
+              </select>
+            </div>
+            <div class="field">
+              <label for="filterPetugas">Petugas</label>
+              <select id="filterPetugas">
+                <option value="">Semua Petugas</option>
+                ${getPetugasForFilter(dashboardFilters.pml_id).map((petugas) => option(petugas.petugas_id, petugasLabel(petugas), dashboardFilters.petugas_id)).join("")}
+              </select>
+            </div>
+            <div class="field">
+              <label for="filterTanggal">Tanggal</label>
+              <input id="filterTanggal" type="date" value="${escapeHtml(dashboardFilters.tanggal)}">
+            </div>
+            <button id="resetDashboardFilter" class="btn secondary" type="button">Reset</button>
+          </div>
+        </section>
+
+        <section class="grid cols-4" style="margin-top:16px">
+          ${metric("Total Wilayah", filteredTasks.length)}
+          ${metric("Selesai", completed)}
+          ${metric("Berjalan", inProgress)}
+          ${metric("Pending", pending)}
+        </section>
+
+        <section class="grid cols-3" style="margin-top:16px">
+          <div class="panel span-2">
+            <div class="panel-head">
+              <h2>Grafik Harian</h2>
+              <span class="fine">Muatan tercacah</span>
+            </div>
+            <div class="chart-box">
+              <canvas id="progressChart"></canvas>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Ringkasan</h2>
+            </div>
+            ${summaryRow("Total target", summary.totalTarget)}
+            ${summaryRow("Muatan tercacah", summary.totalTercacah)}
+            ${summaryRow("Sisa target", summary.sisa)}
+            ${summaryRow("Progress total", summary.progress + "%")}
+          </div>
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Wilayah Kerja</h2>
+            <span class="fine">${filteredTasks.length} baris</span>
+          </div>
+          ${renderTaskTable(filteredTasks, false, dashboardFilters)}
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Riwayat Laporan</h2>
+            <span class="fine">${getVisibleReports(dashboardFilters).length} baris</span>
+          </div>
+          ${renderReportTable(getVisibleReports(dashboardFilters).slice(0, 50), false)}
+        </section>
+      `;
+
+      document.getElementById("filterPml")?.addEventListener("change", (event) => {
+        dashboardFilters.pml_id = event.target.value;
+        dashboardFilters.petugas_id = "";
+        renderDashboard(content);
+      });
+      document.getElementById("filterPetugas").addEventListener("change", (event) => {
+        dashboardFilters.petugas_id = event.target.value;
+        renderDashboard(content);
+      });
+      document.getElementById("filterTanggal").addEventListener("change", (event) => {
+        dashboardFilters.tanggal = event.target.value;
+        renderDashboard(content);
+      });
+      document.getElementById("resetDashboardFilter").addEventListener("click", () => {
+        dashboardFilters = { pml_id: "", petugas_id: "", tanggal: "" };
+        renderDashboard(content);
+      });
+
+      requestAnimationFrame(() => renderChart(filteredTasks, dashboardFilters));
+    }
+
+    function renderDaily(content) {
+      const reports = getVisibleReports({}).slice(0, 80);
+
+      content.innerHTML = `
+        ${pageHead("Laporan Harian", "Input progres pencacahan per wilayah kerja.", "")}
+        <section class="grid cols-3">
+          <form id="dailyForm" class="panel span-2">
+            <div class="panel-head">
+              <h2>Input Laporan</h2>
+            </div>
+            <div class="grid cols-2">
+              <div class="field">
+                <label for="dailyPetugas">Petugas</label>
+                <select id="dailyPetugas" required>
+                  <option value="">Pilih petugas</option>
+                  ${store.petugas.map((petugas) => option(petugas.petugas_id, petugasLabel(petugas))).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="dailyTask">Wilayah kerja</label>
+                <select id="dailyTask" name="task_id" required>
+                  <option value="">Pilih petugas dulu</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="dailyPml">PML</label>
+                <input id="dailyPml" readonly>
+              </div>
+              <div class="field">
+                <label for="dailyAkumulasi">Akumulasi</label>
+                <input id="dailyAkumulasi" readonly>
+              </div>
+              <div class="field">
+                <label for="tanggal">Tanggal monitoring</label>
+                <input id="tanggal" name="tanggal" type="date" required>
+              </div>
+              <div class="field">
+                <label for="muatan_harian">Muatan hari ini</label>
+                <input id="muatan_harian" name="muatan_harian" type="number" min="0" required>
+              </div>
+              <div class="field span-2">
+                <label for="catatan">Catatan</label>
+                <textarea id="catatan" name="catatan"></textarea>
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan Laporan</button>
+            </div>
+          </form>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Ringkas</h2>
+            </div>
+            ${summaryRow("Petugas aktif", store.petugas.length)}
+            ${summaryRow("Wilayah aktif", store.tasks.length)}
+            ${summaryRow("Laporan tersimpan", store.reports.length)}
+          </div>
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Riwayat Laporan</h2>
+            <span class="fine">${reports.length} terbaru</span>
+          </div>
+          ${renderReportTable(reports, true)}
+        </section>
+      `;
+
+      document.getElementById("dailyPetugas").addEventListener("change", updateDailyTaskOptions);
+      document.getElementById("dailyTask").addEventListener("change", updateDailyInfo);
+      document.getElementById("dailyForm").addEventListener("submit", handleCreateDailyReport);
+      attachDeleteHandlers("delete-report", deleteDailyReport);
+    }
+
+    function updateDailyTaskOptions() {
+      const petugasId = document.getElementById("dailyPetugas").value;
+      const select = document.getElementById("dailyTask");
+      const tasks = store.tasks.filter((task) => task.petugas_id === petugasId);
+
+      select.innerHTML = `
+        <option value="">Pilih wilayah kerja</option>
+        ${tasks.map((task) => option(task.task_id, taskLabel(task))).join("")}
+      `;
+
+      updateDailyInfo();
+    }
+
+    function updateDailyInfo() {
+      const task = getTaskById(document.getElementById("dailyTask").value);
+      document.getElementById("dailyPml").value = task ? pmlName(task.pml_id) : "";
+      document.getElementById("dailyAkumulasi").value = task ? getTaskTotal(task.task_id, {}) : "";
+    }
+
+    async function handleCreateDailyReport(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+
+      await submitMutation(form, "createDailyReport", formValues(form), "Laporan harian tersimpan.");
+    }
+
+    function renderTasks(content) {
+      content.innerHTML = `
+        ${pageHead("Wilayah Kerja", "Assign petugas ke wilayah dan target.", "")}
+        <section class="panel">
+          <form id="taskForm">
+            <div class="panel-head">
+              <h2>Assign Wilayah</h2>
+            </div>
+            <div class="grid cols-3">
+              <div class="field ${isAdmin() ? "" : "hidden"}">
+                <label for="taskPml">PML</label>
+                <select id="taskPml" name="pml_id" ${isAdmin() ? "required" : ""}>
+                  <option value="">Pilih PML</option>
+                  ${store.pml.map((pml) => option(pml.pml_id, pml.nama_pml)).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="taskPetugas">Petugas</label>
+                <select id="taskPetugas" name="petugas_id" required>
+                  <option value="">Pilih petugas</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="kecamatan">Kecamatan</label>
+                <select id="kecamatan" name="kecamatan" required>
+                  <option value="">Pilih kecamatan</option>
+                  ${KECAMATAN_ANAMBAS.map((kecamatan) => option(kecamatan, kecamatan)).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="desa">Desa/Kelurahan</label>
+                <select id="desa" name="desa" required>
+                  <option value="">Pilih kecamatan dulu</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="sls">SLS/RT</label>
+                <input id="sls" name="sls" required>
+              </div>
+              <div class="field">
+                <label for="mulai">Mulai</label>
+                <input id="mulai" name="mulai" type="date" required>
+              </div>
+              <div class="field">
+                <label for="selesai">Selesai</label>
+                <input id="selesai" name="selesai" type="date" required>
+              </div>
+              <div class="field">
+                <label for="target">Target</label>
+                <input id="target" name="target" type="number" min="0" required>
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan Wilayah</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Daftar Wilayah</h2>
+            <span class="fine">${store.tasks.length} aktif</span>
+          </div>
+          ${renderTaskTable(store.tasks, true, {})}
+        </section>
+      `;
+
+      document.getElementById("taskPml")?.addEventListener("change", updateTaskPetugasOptions);
+      document.getElementById("kecamatan").addEventListener("change", updateDesaOptions);
+      document.getElementById("taskForm").addEventListener("submit", handleCreateTask);
+      updateTaskPetugasOptions();
+      attachDeleteHandlers("delete-task", deleteTask);
+    }
+
+    function updateTaskPetugasOptions() {
+      const pmlId = isAdmin()
+        ? document.getElementById("taskPml").value
+        : currentUser.pml_id;
+      const select = document.getElementById("taskPetugas");
+      const petugas = store.petugas.filter((item) => !pmlId || item.pml_id === pmlId);
+
+      select.innerHTML = `
+        <option value="">Pilih petugas</option>
+        ${petugas.map((item) => option(item.petugas_id, petugasLabel(item))).join("")}
+      `;
+    }
+
+    function updateDesaOptions() {
+      const kecamatan = document.getElementById("kecamatan").value;
+      const desa = DESA_ANAMBAS[kecamatan] || [];
+
+      document.getElementById("desa").innerHTML = `
+        <option value="">Pilih desa/kelurahan</option>
+        ${desa.map((item) => option(item, item)).join("")}
+      `;
+    }
+
+    async function handleCreateTask(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const payload = formValues(form);
+
+      if (!isAdmin()) {
+        payload.pml_id = currentUser.pml_id;
+      }
+
+      await submitMutation(form, "createTask", payload, "Wilayah kerja tersimpan.");
+    }
+
+    function renderPetugas(content) {
+      content.innerHTML = `
+        ${pageHead("Petugas", "Kelola petugas lapangan.", "")}
+        <section class="panel">
+          <form id="petugasForm">
+            <div class="panel-head">
+              <h2>Tambah Petugas</h2>
+            </div>
+            <div class="grid cols-3">
+              <div class="field ${isAdmin() ? "" : "hidden"}">
+                <label for="petugasPml">PML</label>
+                <select id="petugasPml" name="pml_id" ${isAdmin() ? "required" : ""}>
+                  <option value="">Pilih PML</option>
+                  ${store.pml.map((pml) => option(pml.pml_id, pml.nama_pml)).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="nama_petugas">Nama petugas</label>
+                <input id="nama_petugas" name="nama_petugas" required>
+              </div>
+              <div class="field">
+                <label for="telepon">Nomor telepon</label>
+                <input id="telepon" name="telepon">
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan Petugas</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Daftar Petugas</h2>
+            <span class="fine">${store.petugas.length} aktif</span>
+          </div>
+          ${renderPetugasTable(store.petugas, true)}
+        </section>
+      `;
+
+      document.getElementById("petugasForm").addEventListener("submit", handleCreatePetugas);
+      attachDeleteHandlers("delete-petugas", deletePetugas);
+    }
+
+    async function handleCreatePetugas(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const payload = formValues(form);
+
+      if (!isAdmin()) {
+        payload.pml_id = currentUser.pml_id;
+      }
+
+      await submitMutation(form, "createPetugas", payload, "Petugas tersimpan.");
+    }
+
+    function renderAdmin(content) {
+      if (!isAdmin()) {
+        content.innerHTML = pageHead("Akses ditolak", "Halaman ini hanya untuk admin.", "");
+        return;
+      }
+
+      content.innerHTML = `
+        ${pageHead("Admin", "PML dan akun login.", "")}
+        <section class="grid cols-2">
+          <form id="pmlForm" class="panel">
+            <div class="panel-head">
+              <h2>Tambah PML</h2>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="nama_pml">Nama PML</label>
+                <input id="nama_pml" name="nama_pml" required>
+              </div>
+              <div class="field">
+                <label for="pmlTelepon">Nomor telepon</label>
+                <input id="pmlTelepon" name="telepon">
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan PML</button>
+            </div>
+          </form>
+
+          <form id="userForm" class="panel">
+            <div class="panel-head">
+              <h2>Buat Akun</h2>
+            </div>
+            <div class="grid cols-2">
+              <div class="field">
+                <label for="nama">Nama user</label>
+                <input id="nama" name="nama" required>
+              </div>
+              <div class="field">
+                <label for="usernameNew">Username</label>
+                <input id="usernameNew" name="username" autocomplete="off" required>
+              </div>
+              <div class="field">
+                <label for="passwordNew">Password awal</label>
+                <input id="passwordNew" name="password" type="password" minlength="6" autocomplete="new-password" required>
+              </div>
+              <div class="field">
+                <label for="role">Role</label>
+                <select id="role" name="role" required>
+                  <option value="pml">PML</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div id="userPmlField" class="field span-2">
+                <label for="userPml">PML</label>
+                <select id="userPml" name="pml_id" required>
+                  <option value="">Pilih PML</option>
+                  ${store.pml.map((pml) => option(pml.pml_id, pml.nama_pml)).join("")}
+                </select>
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan Akun</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="grid cols-2" style="margin-top:16px">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Daftar PML</h2>
+              <span class="fine">${store.pml.length} aktif</span>
+            </div>
+            ${renderPmlTable(store.pml, true)}
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Daftar Akun</h2>
+              <span class="fine">${store.users.length} aktif</span>
+            </div>
+            ${renderUserTable(store.users)}
+          </div>
+        </section>
+      `;
+
+      document.getElementById("pmlForm").addEventListener("submit", handleCreatePml);
+      document.getElementById("userForm").addEventListener("submit", handleCreateUser);
+      document.getElementById("role").addEventListener("change", updateUserRoleField);
+      updateUserRoleField();
+      attachDeleteHandlers("delete-pml", deletePml);
+      attachDeleteHandlers("deactivate-user", deactivateUser);
+    }
+
+    function updateUserRoleField() {
+      const isPml = document.getElementById("role").value === "pml";
+      const field = document.getElementById("userPmlField");
+      const select = document.getElementById("userPml");
+
+      field.classList.toggle("hidden", !isPml);
+      select.required = isPml;
+      select.disabled = !isPml;
+    }
+
+    async function handleCreatePml(event) {
+      event.preventDefault();
+      await submitMutation(event.currentTarget, "createPml", formValues(event.currentTarget), "PML tersimpan.");
+    }
+
+    async function handleCreateUser(event) {
+      event.preventDefault();
+      await submitMutation(event.currentTarget, "createUser", formValues(event.currentTarget), "Akun tersimpan.");
+    }
+
+    function renderAccount(content) {
+      content.innerHTML = `
+        ${pageHead("Akun", "Ubah password login.", "")}
+        <section class="panel" style="max-width:520px">
+          <form id="passwordForm">
+            <div class="grid">
+              <div class="field">
+                <label for="current_password">Password lama</label>
+                <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
+              </div>
+              <div class="field">
+                <label for="new_password">Password baru</label>
+                <input id="new_password" name="new_password" type="password" minlength="6" autocomplete="new-password" required>
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Ubah Password</button>
+            </div>
+          </form>
+        </section>
+      `;
+
+      document.getElementById("passwordForm").addEventListener("submit", handleChangePassword);
+    }
+
+    async function handleChangePassword(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+
+      await submitMutation(form, "changePassword", formValues(form), "Password diperbarui.", false);
+      form.reset();
+    }
+
+    async function submitMutation(form, functionName, payload, successMessage, rerender = true) {
+      setFormBusy(form, true);
+
+      try {
+        const response = await runServer(functionName, sessionToken, payload);
+
+        if (response.data) {
+          store = normalizeStore(response.data);
+        }
+
+        showToast(successMessage);
+
+        if (rerender) {
+          renderCurrentView();
+        }
+      } catch (error) {
+        handleError(error);
+      } finally {
+        setFormBusy(form, false);
+      }
+    }
+
+    async function deleteTask(id) {
+      await runDelete("deleteTask", id, "Wilayah kerja dinonaktifkan.");
+    }
+
+    async function deletePetugas(id) {
+      await runDelete("deletePetugas", id, "Petugas dinonaktifkan.");
+    }
+
+    async function deletePml(id) {
+      await runDelete("deletePml", id, "PML dinonaktifkan.");
+    }
+
+    async function deleteDailyReport(id) {
+      await runDelete("deleteDailyReport", id, "Laporan dinonaktifkan.");
+    }
+
+    async function deactivateUser(id) {
+      await runDelete("deactivateUser", id, "Akun dinonaktifkan.");
+    }
+
+    async function runDelete(functionName, id, successMessage) {
+      if (!confirm("Nonaktifkan data ini?")) {
+        return;
+      }
+
+      try {
+        const response = await runServer(functionName, sessionToken, id);
+
+        if (response.data) {
+          store = normalizeStore(response.data);
+        }
+
+        showToast(successMessage);
+        renderCurrentView();
+      } catch (error) {
+        handleError(error);
+      }
+    }
+
+    async function refreshData() {
+      const button = document.getElementById("refreshButton");
+      button.disabled = true;
+
+      try {
+        const response = await runServer("getBootstrapData", sessionToken);
+        currentUser = response.user;
+        store = normalizeStore(response.data);
+        renderShell();
+        showToast("Data diperbarui.");
+      } catch (error) {
+        handleError(error);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function handleLogout() {
+      try {
+        await runServer("logout", sessionToken);
+      } catch (error) {
+        // Logout lokal tetap dilanjutkan.
+      }
+
+      sessionStorage.removeItem("se2026_session_token");
+      sessionToken = "";
+      currentUser = null;
+      store = emptyStore();
+      renderLogin(false);
+    }
+
+    function renderTaskTable(tasks, withActions, filters) {
+      if (!tasks.length) {
+        return emptyState("Belum ada wilayah kerja.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Kecamatan</th>
+                <th>Desa</th>
+                <th>SLS/RT</th>
+                <th>PML</th>
+                <th>Petugas</th>
+                <th>Periode</th>
+                <th>Target</th>
+                <th>Tercacah</th>
+                <th>Progress</th>
+                ${withActions ? "<th>Aksi</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${tasks.map((task, index) => {
+                const total = getTaskTotal(task.task_id, filters || {});
+                const progress = getTaskProgress(task, filters || {});
+
+                return `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(task.kecamatan)}</td>
+                    <td>${escapeHtml(task.desa)}</td>
+                    <td>${escapeHtml(task.sls)}</td>
+                    <td>${escapeHtml(pmlName(task.pml_id))}</td>
+                    <td>${escapeHtml(petugasName(task.petugas_id))}</td>
+                    <td>${escapeHtml(task.mulai)} s.d. ${escapeHtml(task.selesai)}</td>
+                    <td>${numberText(task.target)}</td>
+                    <td>${numberText(total)}</td>
+                    <td>${progressMarkup(progress)}</td>
+                    ${withActions ? `<td><button class="btn danger" type="button" data-delete-task="${escapeHtml(task.task_id)}">Nonaktifkan</button></td>` : ""}
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderReportTable(reports, withActions) {
+      if (!reports.length) {
+        return emptyState("Belum ada laporan harian.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Wilayah</th>
+                <th>PML</th>
+                <th>Petugas</th>
+                <th>Muatan</th>
+                <th>Catatan</th>
+                ${withActions ? "<th>Aksi</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${reports.map((report, index) => {
+                const task = getTaskById(report.task_id);
+
+                return `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(report.tanggal)}</td>
+                    <td>${escapeHtml(task ? taskLabel(task) : "-")}</td>
+                    <td>${escapeHtml(task ? pmlName(task.pml_id) : "-")}</td>
+                    <td>${escapeHtml(task ? petugasName(task.petugas_id) : "-")}</td>
+                    <td>${numberText(report.muatan_harian)}</td>
+                    <td>${escapeHtml(report.catatan || "-")}</td>
+                    ${withActions ? `<td><button class="btn danger" type="button" data-delete-report="${escapeHtml(report.report_id)}">Nonaktifkan</button></td>` : ""}
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderPetugasTable(petugas, withActions) {
+      if (!petugas.length) {
+        return emptyState("Belum ada petugas.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>PML</th>
+                <th>Telepon</th>
+                ${withActions ? "<th>Aksi</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${petugas.map((item, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${escapeHtml(item.nama_petugas)}</td>
+                  <td>${escapeHtml(pmlName(item.pml_id))}</td>
+                  <td>${escapeHtml(item.telepon || "-")}</td>
+                  ${withActions ? `<td><button class="btn danger" type="button" data-delete-petugas="${escapeHtml(item.petugas_id)}">Nonaktifkan</button></td>` : ""}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderPmlTable(pml, withActions) {
+      if (!pml.length) {
+        return emptyState("Belum ada PML.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table style="min-width:560px">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Telepon</th>
+                ${withActions ? "<th>Aksi</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${pml.map((item, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${escapeHtml(item.nama_pml)}</td>
+                  <td>${escapeHtml(item.telepon || "-")}</td>
+                  ${withActions ? `<td><button class="btn danger" type="button" data-delete-pml="${escapeHtml(item.pml_id)}">Nonaktifkan</button></td>` : ""}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderUserTable(users) {
+      if (!users.length) {
+        return emptyState("Belum ada akun.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table style="min-width:640px">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>PML</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${users.map((user, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${escapeHtml(user.nama)}</td>
+                  <td>${escapeHtml(user.username)}</td>
+                  <td>${escapeHtml(user.role)}</td>
+                  <td>${escapeHtml(user.pml_id ? pmlName(user.pml_id) : "-")}</td>
+                  <td>
+                    ${user.user_id === currentUser.user_id
+                      ? `<span class="fine">Sedang login</span>`
+                      : `<button class="btn danger" type="button" data-deactivate-user="${escapeHtml(user.user_id)}">Nonaktifkan</button>`
+                    }
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderChart(tasks, filters) {
+      const canvas = document.getElementById("progressChart");
+
+      if (!canvas || typeof Chart === "undefined") {
+        return;
+      }
+
+      const dailyMap = {};
+      const taskIds = {};
+
+      tasks.forEach((task) => {
+        taskIds[task.task_id] = true;
+      });
+
+      store.reports.forEach((report) => {
+        if (!taskIds[report.task_id]) {
+          return;
+        }
+
+        if (filters.tanggal && report.tanggal !== filters.tanggal) {
+          return;
+        }
+
+        dailyMap[report.tanggal] = (dailyMap[report.tanggal] || 0) + asNumber(report.muatan_harian);
+      });
+
+      const labels = Object.keys(dailyMap).sort();
+      const values = labels.map((date) => dailyMap[date]);
+
+      progressChart = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Muatan harian",
+            data: values,
+            borderColor: "#dd620a",
+            backgroundColor: "rgba(221, 98, 10, 0.18)",
+            tension: 0.28,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    function getFilteredTasks(filters) {
+      return store.tasks.filter((task) => {
+        const matchPml = !filters.pml_id || task.pml_id === filters.pml_id;
+        const matchPetugas = !filters.petugas_id || task.petugas_id === filters.petugas_id;
+
+        if (!matchPml || !matchPetugas) {
+          return false;
+        }
+
+        if (filters.tanggal) {
+          return store.reports.some((report) => report.task_id === task.task_id && report.tanggal === filters.tanggal);
+        }
+
+        return true;
+      });
+    }
+
+    function getVisibleReports(filters) {
+      const visibleTaskIds = {};
+
+      getFilteredTasks(filters).forEach((task) => {
+        visibleTaskIds[task.task_id] = true;
+      });
+
+      return store.reports
+        .filter((report) => visibleTaskIds[report.task_id])
+        .filter((report) => !filters.tanggal || report.tanggal === filters.tanggal)
+        .sort((a, b) => String(b.tanggal).localeCompare(String(a.tanggal)) || String(b.created_at).localeCompare(String(a.created_at)));
+    }
+
+    function getTaskReports(taskId, filters) {
+      return store.reports.filter((report) => {
+        return report.task_id === taskId && (!filters.tanggal || report.tanggal === filters.tanggal);
+      });
+    }
+
+    function getTaskTotal(taskId, filters) {
+      return getTaskReports(taskId, filters || {}).reduce((sum, report) => sum + asNumber(report.muatan_harian), 0);
+    }
+
+    function getTaskProgress(task, filters) {
+      const target = asNumber(task.target);
+
+      if (target <= 0) {
+        return 0;
+      }
+
+      return Math.min(100, Math.round((getTaskTotal(task.task_id, filters || {}) / target) * 100));
+    }
+
+    function getSummary(tasks, filters) {
+      const totalTarget = tasks.reduce((sum, task) => sum + asNumber(task.target), 0);
+      const totalTercacah = tasks.reduce((sum, task) => sum + getTaskTotal(task.task_id, filters), 0);
+      const sisa = Math.max(totalTarget - totalTercacah, 0);
+      const progress = totalTarget <= 0 ? 0 : Math.round((totalTercacah / totalTarget) * 100);
+
+      return {
+        totalTarget,
+        totalTercacah,
+        sisa,
+        progress
+      };
+    }
+
+    function getPetugasForFilter(pmlId) {
+      return store.petugas.filter((petugas) => !pmlId || petugas.pml_id === pmlId);
+    }
+
+    function getTaskById(taskId) {
+      return store.tasks.find((task) => task.task_id === taskId);
+    }
+
+    function pmlName(pmlId) {
+      const pml = store.pml.find((item) => item.pml_id === pmlId);
+      return pml ? pml.nama_pml : "-";
+    }
+
+    function petugasName(petugasId) {
+      const petugas = store.petugas.find((item) => item.petugas_id === petugasId);
+      return petugas ? petugas.nama_petugas : "-";
+    }
+
+    function petugasLabel(petugas) {
+      return isAdmin()
+        ? `${petugas.nama_petugas} (${pmlName(petugas.pml_id)})`
+        : petugas.nama_petugas;
+    }
+
+    function taskLabel(task) {
+      return `${task.kecamatan} - ${task.desa} - ${task.sls}`;
+    }
+
+    function metric(label, value) {
+      return `
+        <div class="metric">
+          <span class="fine">${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+          <span class="muted">Aktif</span>
+        </div>
+      `;
+    }
+
+    function summaryRow(label, value) {
+      return `
+        <div class="summary-row">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `;
+    }
+
+    function progressMarkup(progress) {
+      return `
+        <div class="progress">
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${progress}%"></div>
+          </div>
+          <span class="fine">${progress}%</span>
+        </div>
+      `;
+    }
+
+    function footerMarkup() {
+      return `
+        <footer class="app-footer">
+          Webmon v1.2. Tim IPDS BPS Kab Kep Anambas. CP perubahan atau saran:
+          <a href="mailto:rafirizha@bps.go.id">rafirizha@bps.go.id</a>
+        </footer>
+      `;
+    }
+
+    function logoMarkup() {
+      return `
+        <div class="brand-mark">
+          <img src="${WEBMON_LOGO_SRC}" alt="Logo Webmon">
+        </div>
+      `;
+    }
+
+    function pageHead(title, subtitle, actions) {
+      return `
+        <header class="page-head">
+          <div class="page-title">
+            <h1>${escapeHtml(title)}</h1>
+            <p class="muted">${escapeHtml(subtitle)}</p>
+          </div>
+          <div class="actions">${actions || ""}</div>
+        </header>
+      `;
+    }
+
+    function emptyState(message) {
+      return `<div class="empty">${escapeHtml(message)}</div>`;
+    }
+
+    function option(value, label, selectedValue) {
+      const selected = selectedValue !== undefined && String(value) === String(selectedValue)
+        ? "selected"
+        : "";
+
+      return `<option value="${escapeHtml(value)}" ${selected}>${escapeHtml(label)}</option>`;
+    }
+
+    function formValues(form) {
+      const payload = {};
+      const data = new FormData(form);
+
+      data.forEach((value, key) => {
+        payload[key] = value;
+      });
+
+      return payload;
+    }
+
+    function setFormBusy(form, busy) {
+      form.querySelectorAll("button, input, select, textarea").forEach((field) => {
+        field.disabled = busy;
+      });
+    }
+
+    function attachDeleteHandlers(attribute, handler) {
+      document.querySelectorAll(`[data-${attribute}]`).forEach((button) => {
+        button.addEventListener("click", () => handler(button.dataset[toDatasetKey(attribute)]));
+      });
+    }
+
+    function toDatasetKey(attribute) {
+      return attribute.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    }
+
+    function normalizeStore(data) {
+      return {
+        pml: (data && data.pml) || [],
+        petugas: (data && data.petugas) || [],
+        tasks: (data && data.tasks) || [],
+        reports: (data && data.reports) || [],
+        users: (data && data.users) || []
+      };
+    }
+
+    function emptyStore() {
+      return {
+        pml: [],
+        petugas: [],
+        tasks: [],
+        reports: [],
+        users: []
+      };
+    }
+
+    function isAdmin() {
+      return currentUser && currentUser.role === "admin";
+    }
+
+    function asNumber(value) {
+      const number = Number(value);
+      return isFinite(number) ? number : 0;
+    }
+
+    function numberText(value) {
+      return asNumber(value).toLocaleString("id-ID");
+    }
+
+    function escapeHtml(value) {
+      return String(value === undefined || value === null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function destroyChart() {
+      if (progressChart) {
+        progressChart.destroy();
+        progressChart = null;
+      }
+    }
+
+    function showToast(message, type) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = `toast show ${type === "error" ? "error" : ""}`;
+
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.className = "toast";
+      }, 3600);
+    }
+
+    function handleError(error) {
+      const message = error && error.message ? error.message : "Terjadi kesalahan.";
+      showToast(message, "error");
+
+      if (message.toLowerCase().includes("sesi")) {
+        sessionStorage.removeItem("se2026_session_token");
+        sessionToken = "";
+        renderLogin(false);
+      }
+    }
+
+    function runServer(functionName, ...args) {
+      return new Promise((resolve, reject) => {
+        const runner = google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler((error) => {
+            reject(new Error(error && error.message ? error.message : String(error)));
+          });
+
+        runner[functionName](...args);
+      });
+    }
+  </script>
+</body>
+</html>
