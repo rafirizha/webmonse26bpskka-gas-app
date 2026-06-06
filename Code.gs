@@ -63,6 +63,8 @@ const SHEET_HEADERS = {
   ]
 };
 
+# Segera ubah password admin dari menu `Akun`.
+
 const CACHE_TTL_SECONDS = 21600;
 const DEFAULT_ADMIN_USERNAME = "admin";
 const DEFAULT_ADMIN_PASSWORD = "admin2026";
