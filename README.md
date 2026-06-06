@@ -5,7 +5,10 @@ Web app Google Apps Script untuk monitoring PML, petugas, wilayah kerja, dan lap
 ## File
 
 - `Code.gs`: backend Apps Script, auth, CRUD, dan akses Spreadsheet.
-- `Index.html`: UI web app.
+- `Index.html`: shell halaman utama.
+- `Styles.html`: CSS tampilan.
+- `Assets.html`: logo embedded/base64.
+- `Script.html`: JavaScript client.
 - `appsscript.json`: manifest Apps Script.
 
 ## Setup Paling Mudah
@@ -13,7 +16,7 @@ Web app Google Apps Script untuk monitoring PML, petugas, wilayah kerja, dan lap
 1. Buat Google Spreadsheet kosong.
 2. Buka `Extensions > Apps Script`.
 3. Salin isi `Code.gs` ke file `Code.gs` di Apps Script.
-4. Buat file HTML bernama `Index`, lalu salin isi `Index.html`.
+4. Buat file HTML bernama `Index`, `Styles`, `Assets`, dan `Script`, lalu salin isi file HTML masing-masing.
 5. Buka `Project Settings`, centang `Show appsscript.json`, lalu salin isi `appsscript.json`.
 6. Jalankan fungsi `setupApp()` dari editor Apps Script.
 7. Beri izin saat Google meminta authorization.

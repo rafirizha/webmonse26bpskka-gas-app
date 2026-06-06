@@ -1,0 +1,1376 @@
+﻿<script>
+    const KECAMATAN_ANAMBAS = [
+      "Jemaja",
+      "Jemaja Barat",
+      "Jemaja Timur",
+      "Siantan Selatan",
+      "Siantan",
+      "Siantan Timur",
+      "Siantan Tengah",
+      "Palmatak",
+      "Siantan Utara",
+      "Kute Siantan"
+    ];
+
+    const DESA_ANAMBAS = {
+      "Jemaja": ["Mampok", "Letung", "Rewak", "Air Biru", "Landak", "Batu Berapit"],
+      "Jemaja Barat": ["Keramut", "Impol", "Sunggak"],
+      "Jemaja Timur": ["Bukit Padi", "Genting Pulur", "Ulu Maras", "Kuala Maras"],
+      "Siantan Selatan": ["Kiabu", "Tiangau", "Air Bini", "Mengkait", "Telaga", "Telaga Kecil", "Lingat"],
+      "Siantan": ["Tarempa", "Tarempa Selatan", "Tarempa Barat Daya", "Tarempa Barat", "Tarempa Timur", "Pesisir Timur", "Sri Tanjung"],
+      "Siantan Timur": ["Serat", "Air Putih", "Nyamuk", "Batu Belah", "Munjan", "Temburun"],
+      "Siantan Tengah": ["Air Asuk", "Air Sena", "Teluk Siantan", "Lidi", "Liuk", "Teluk Sunting"],
+      "Palmatak": ["Candi", "Tebang", "Ladan", "Putik", "Piabung", "Langir", "Belibak"],
+      "Siantan Utara": ["Mubur", "Bayat", "Piasan"],
+      "Kute Siantan": ["Payalaman", "Teluk Bayur", "Batu Ampar", "Matak", "Payamaram"]
+    };
+
+    let sessionToken = sessionStorage.getItem("se2026_session_token") || "";
+    let currentUser = null;
+    let store = emptyStore();
+    let currentView = "dashboard";
+    let progressChart = null;
+    let dashboardFilters = {
+      pml_id: "",
+      petugas_id: "",
+      tanggal: ""
+    };
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    async function init() {
+      if (sessionToken) {
+        renderLogin(true);
+
+        try {
+          const response = await runServer("getBootstrapData", sessionToken);
+          currentUser = response.user;
+          store = normalizeStore(response.data);
+          renderShell();
+        } catch (error) {
+          sessionStorage.removeItem("se2026_session_token");
+          sessionToken = "";
+          renderLogin(false);
+        }
+
+        return;
+      }
+
+      renderLogin(false);
+    }
+
+    function renderLogin(checkingSession) {
+      destroyChart();
+
+      document.getElementById("root").innerHTML = `
+        <main class="auth-screen">
+          <section class="auth-panel">
+            <div class="auth-card">
+              <div class="brand">
+                ${logoMarkup()}
+                <span>Monitoring SE2026 <br> Kab. Kep. Anambas</span>
+              </div>
+              <h1>Masuk</h1>
+              <p class="muted">Gunakan akun PML atau admin yang sudah dibuat.</p>
+
+              <form id="loginForm" class="form-stack">
+                <div class="field">
+                  <label for="username">Username</label>
+                  <input id="username" name="username" autocomplete="username" required ${checkingSession ? "disabled" : ""}>
+                </div>
+                <div class="field">
+                  <label for="password">Password</label>
+                  <input id="password" name="password" type="password" autocomplete="current-password" required ${checkingSession ? "disabled" : ""}>
+                </div>
+                <button class="btn full" type="submit" ${checkingSession ? "disabled" : ""}>
+                  ${checkingSession ? "Memeriksa sesi" : "Masuk"}
+                </button>
+              </form>
+              ${footerMarkup()}
+            </div>
+          </section>
+          <section class="auth-aside">
+            <div class="auth-hero">
+              <div class="auth-hero-logos">
+                <img class="auth-hero-logo-bps" src="${BPS_LOGO_SRC}" alt="Logo BPS">
+                <img class="auth-hero-logo" src="${WEBMON_LOGO_SRC}" alt="Logo SE2026">
+              </div>
+              <div>
+                <div class="auth-kicker">Webmon SE2026</div>
+                <h1 class="auth-title">Monitoring Petugas Sensus Ekonomi 2026</h1>
+                <p class="auth-lead">
+                  Sistem monitoring lapangan BPS Kabupaten Kepulauan Anambas untuk memantau progres petugas, wilayah kerja, dan laporan harian.
+                </p>
+              </div>
+              <div class="auth-proof-grid">
+                <div class="auth-proof">
+                  <span class="fine">Pengguna</span>
+                  <strong>11</strong>
+                  <span class="muted">PML</span>
+                </div>
+                <div class="auth-proof">
+                  <span class="fine">Petugas</span>
+                  <strong>40</strong>
+                  <span class="muted">PPL</span>
+                </div>
+                <div class="auth-proof">
+                  <span class="fine">Periode</span>
+                  <strong>75</strong>
+                  <span class="muted">Hari sensus</span>
+                </div>
+              </div>
+              <div class="auth-note">
+                Data tersimpan di Google Spreadsheet dan dapat dipantau melalui dashboard setelah login.
+              </div>
+            </div>
+          </section>
+        </main>
+      `;
+
+      const loginForm = document.getElementById("loginForm");
+
+      if (loginForm) {
+        loginForm.addEventListener("submit", handleLogin);
+      }
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const payload = formValues(form);
+
+      setFormBusy(form, true);
+
+      try {
+        const response = await runServer("login", payload);
+        sessionToken = response.token;
+        currentUser = response.user;
+        store = normalizeStore(response.data);
+        currentView = "dashboard";
+        sessionStorage.setItem("se2026_session_token", sessionToken);
+        renderShell();
+        showToast("Login berhasil.");
+      } catch (error) {
+        showToast(error.message || "Login gagal.", "error");
+      } finally {
+        setFormBusy(form, false);
+      }
+    }
+
+    function renderShell() {
+      const navItems = [
+        { id: "dashboard", label: "Dashboard" },
+        { id: "daily", label: "Laporan Harian" },
+        { id: "tasks", label: "Wilayah Kerja" },
+        { id: "petugas", label: "Petugas" },
+        ...(isAdmin() ? [{ id: "admin", label: "Admin" }] : []),
+        { id: "account", label: "Akun" }
+      ];
+
+      if (!navItems.some((item) => item.id === currentView)) {
+        currentView = "dashboard";
+      }
+
+      document.getElementById("root").innerHTML = `
+        <div class="app-shell">
+          <aside class="sidebar">
+            <div>
+              <div class="brand" style="margin-bottom:14px">
+                ${logoMarkup()}
+                <span>Monitoring SE2026 <br> Kab. Kep. Anambas</span>
+              </div>
+              <div class="user-chip">
+                <strong>${escapeHtml(currentUser.nama)}</strong>
+                <span class="fine">${escapeHtml(currentUser.username)}</span>
+                <span class="role">${escapeHtml(currentUser.role)}</span>
+              </div>
+            </div>
+            <nav class="nav-list" aria-label="Navigasi utama">
+              ${navItems.map((item) => `
+                <button class="nav-item ${item.id === currentView ? "active" : ""}" type="button" data-view="${item.id}">
+                  ${item.label}
+                </button>
+              `).join("")}
+            </nav>
+            <div class="sidebar-actions">
+              <button id="refreshButton" class="btn secondary" type="button">Refresh</button>
+              <button id="logoutButton" class="btn secondary" type="button">Keluar</button>
+            </div>
+          </aside>
+          <main class="main">
+            <div id="content"></div>
+            ${footerMarkup()}
+          </main>
+        </div>
+      `;
+
+      document.querySelectorAll("[data-view]").forEach((button) => {
+        button.addEventListener("click", () => {
+          currentView = button.dataset.view;
+          renderShell();
+        });
+      });
+
+      document.getElementById("refreshButton").addEventListener("click", refreshData);
+      document.getElementById("logoutButton").addEventListener("click", handleLogout);
+
+      renderCurrentView();
+    }
+
+    function renderCurrentView() {
+      const content = document.getElementById("content");
+
+      if (!content) {
+        return;
+      }
+
+      destroyChart();
+
+      if (currentView === "dashboard") {
+        renderDashboard(content);
+      } else if (currentView === "daily") {
+        renderDaily(content);
+      } else if (currentView === "tasks") {
+        renderTasks(content);
+      } else if (currentView === "petugas") {
+        renderPetugas(content);
+      } else if (currentView === "admin") {
+        renderAdmin(content);
+      } else {
+        renderAccount(content);
+      }
+    }
+
+    function renderDashboard(content) {
+      const filteredTasks = getFilteredTasks(dashboardFilters);
+      const summary = getSummary(filteredTasks, dashboardFilters);
+      const completed = filteredTasks.filter((task) => getTaskProgress(task, dashboardFilters) >= 100).length;
+      const inProgress = filteredTasks.filter((task) => {
+        const progress = getTaskProgress(task, dashboardFilters);
+        return progress > 0 && progress < 100;
+      }).length;
+      const pending = filteredTasks.filter((task) => getTaskProgress(task, dashboardFilters) === 0).length;
+
+      content.innerHTML = `
+        ${pageHead("Dashboard", "Pantauan wilayah kerja dan laporan harian.", "")}
+        <section class="panel">
+          <div class="filters">
+            <div class="field ${isAdmin() ? "" : "hidden"}">
+              <label for="filterPml">PML</label>
+              <select id="filterPml">
+                <option value="">Semua PML</option>
+                ${store.pml.map((pml) => option(pml.pml_id, pml.nama_pml, dashboardFilters.pml_id)).join("")}
+              </select>
+            </div>
+            <div class="field">
+              <label for="filterPetugas">Petugas</label>
+              <select id="filterPetugas">
+                <option value="">Semua Petugas</option>
+                ${getPetugasForFilter(dashboardFilters.pml_id).map((petugas) => option(petugas.petugas_id, petugasLabel(petugas), dashboardFilters.petugas_id)).join("")}
+              </select>
+            </div>
+            <div class="field">
+              <label for="filterTanggal">Tanggal</label>
+              <input id="filterTanggal" type="date" value="${escapeHtml(dashboardFilters.tanggal)}">
+            </div>
+            <button id="resetDashboardFilter" class="btn secondary" type="button">Reset</button>
+          </div>
+        </section>
+
+        <section class="grid cols-4" style="margin-top:16px">
+          ${metric("Total Wilayah", filteredTasks.length)}
+          ${metric("Selesai", completed)}
+          ${metric("Berjalan", inProgress)}
+          ${metric("Pending", pending)}
+        </section>
+
+        <section class="grid cols-3" style="margin-top:16px">
+          <div class="panel span-2">
+            <div class="panel-head">
+              <h2>Grafik Harian</h2>
+              <span class="fine">Muatan tercacah</span>
+            </div>
+            <div class="chart-box">
+              <canvas id="progressChart"></canvas>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Ringkasan</h2>
+            </div>
+            ${summaryRow("Total target", summary.totalTarget)}
+            ${summaryRow("Muatan tercacah", summary.totalTercacah)}
+            ${summaryRow("Sisa target", summary.sisa)}
+            ${summaryRow("Progress total", summary.progress + "%")}
+          </div>
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Wilayah Kerja</h2>
+            <span class="fine">${filteredTasks.length} baris</span>
+          </div>
+          ${renderTaskTable(filteredTasks, false, dashboardFilters)}
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Riwayat Laporan</h2>
+            <span class="fine">${getVisibleReports(dashboardFilters).length} baris</span>
+          </div>
+          ${renderReportTable(getVisibleReports(dashboardFilters).slice(0, 50), false)}
+        </section>
+      `;
+
+      document.getElementById("filterPml")?.addEventListener("change", (event) => {
+        dashboardFilters.pml_id = event.target.value;
+        dashboardFilters.petugas_id = "";
+        renderDashboard(content);
+      });
+      document.getElementById("filterPetugas").addEventListener("change", (event) => {
+        dashboardFilters.petugas_id = event.target.value;
+        renderDashboard(content);
+      });
+      document.getElementById("filterTanggal").addEventListener("change", (event) => {
+        dashboardFilters.tanggal = event.target.value;
+        renderDashboard(content);
+      });
+      document.getElementById("resetDashboardFilter").addEventListener("click", () => {
+        dashboardFilters = { pml_id: "", petugas_id: "", tanggal: "" };
+        renderDashboard(content);
+      });
+
+      requestAnimationFrame(() => renderChart(filteredTasks, dashboardFilters));
+    }
+
+    function renderDaily(content) {
+      const reports = getVisibleReports({}).slice(0, 80);
+
+      content.innerHTML = `
+        ${pageHead("Laporan Harian", "Input progres pencacahan per wilayah kerja.", "")}
+        <section class="grid cols-3">
+          <form id="dailyForm" class="panel span-2">
+            <div class="panel-head">
+              <h2>Input Laporan</h2>
+            </div>
+            <div class="grid cols-2">
+              <div class="field">
+                <label for="dailyPetugas">Petugas</label>
+                <select id="dailyPetugas" required>
+                  <option value="">Pilih petugas</option>
+                  ${store.petugas.map((petugas) => option(petugas.petugas_id, petugasLabel(petugas))).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="dailyTask">Wilayah kerja</label>
+                <select id="dailyTask" name="task_id" required>
+                  <option value="">Pilih petugas dulu</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="dailyPml">PML</label>
+                <input id="dailyPml" readonly>
+              </div>
+              <div class="field">
+                <label for="dailyAkumulasi">Akumulasi</label>
+                <input id="dailyAkumulasi" readonly>
+              </div>
+              <div class="field">
+                <label for="tanggal">Tanggal monitoring</label>
+                <input id="tanggal" name="tanggal" type="date" required>
+              </div>
+              <div class="field">
+                <label for="muatan_harian">Muatan hari ini</label>
+                <input id="muatan_harian" name="muatan_harian" type="number" min="0" required>
+              </div>
+              <div class="field span-2">
+                <label for="catatan">Catatan</label>
+                <textarea id="catatan" name="catatan"></textarea>
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan Laporan</button>
+            </div>
+          </form>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Ringkas</h2>
+            </div>
+            ${summaryRow("Petugas aktif", store.petugas.length)}
+            ${summaryRow("Wilayah aktif", store.tasks.length)}
+            ${summaryRow("Laporan tersimpan", store.reports.length)}
+          </div>
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Riwayat Laporan</h2>
+            <span class="fine">${reports.length} terbaru</span>
+          </div>
+          ${renderReportTable(reports, true)}
+        </section>
+      `;
+
+      document.getElementById("dailyPetugas").addEventListener("change", updateDailyTaskOptions);
+      document.getElementById("dailyTask").addEventListener("change", updateDailyInfo);
+      document.getElementById("dailyForm").addEventListener("submit", handleCreateDailyReport);
+      attachDeleteHandlers("delete-report", deleteDailyReport);
+    }
+
+    function updateDailyTaskOptions() {
+      const petugasId = document.getElementById("dailyPetugas").value;
+      const select = document.getElementById("dailyTask");
+      const tasks = store.tasks.filter((task) => task.petugas_id === petugasId);
+
+      select.innerHTML = `
+        <option value="">Pilih wilayah kerja</option>
+        ${tasks.map((task) => option(task.task_id, taskLabel(task))).join("")}
+      `;
+
+      updateDailyInfo();
+    }
+
+    function updateDailyInfo() {
+      const task = getTaskById(document.getElementById("dailyTask").value);
+      document.getElementById("dailyPml").value = task ? pmlName(task.pml_id) : "";
+      document.getElementById("dailyAkumulasi").value = task ? getTaskTotal(task.task_id, {}) : "";
+    }
+
+    async function handleCreateDailyReport(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+
+      await submitMutation(form, "createDailyReport", formValues(form), "Laporan harian tersimpan.");
+    }
+
+    function renderTasks(content) {
+      content.innerHTML = `
+        ${pageHead("Wilayah Kerja", "Assign petugas ke wilayah dan target.", "")}
+        <section class="panel">
+          <form id="taskForm">
+            <div class="panel-head">
+              <h2>Assign Wilayah</h2>
+            </div>
+            <div class="grid cols-3">
+              <div class="field ${isAdmin() ? "" : "hidden"}">
+                <label for="taskPml">PML</label>
+                <select id="taskPml" name="pml_id" ${isAdmin() ? "required" : ""}>
+                  <option value="">Pilih PML</option>
+                  ${store.pml.map((pml) => option(pml.pml_id, pml.nama_pml)).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="taskPetugas">Petugas</label>
+                <select id="taskPetugas" name="petugas_id" required>
+                  <option value="">Pilih petugas</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="kecamatan">Kecamatan</label>
+                <select id="kecamatan" name="kecamatan" required>
+                  <option value="">Pilih kecamatan</option>
+                  ${KECAMATAN_ANAMBAS.map((kecamatan) => option(kecamatan, kecamatan)).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="desa">Desa/Kelurahan</label>
+                <select id="desa" name="desa" required>
+                  <option value="">Pilih kecamatan dulu</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="sls">SLS/RT</label>
+                <input id="sls" name="sls" required>
+              </div>
+              <div class="field">
+                <label for="mulai">Mulai</label>
+                <input id="mulai" name="mulai" type="date" required>
+              </div>
+              <div class="field">
+                <label for="selesai">Selesai</label>
+                <input id="selesai" name="selesai" type="date" required>
+              </div>
+              <div class="field">
+                <label for="target">Target</label>
+                <input id="target" name="target" type="number" min="0" required>
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan Wilayah</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Daftar Wilayah</h2>
+            <span class="fine">${store.tasks.length} aktif</span>
+          </div>
+          ${renderTaskTable(store.tasks, true, {})}
+        </section>
+      `;
+
+      document.getElementById("taskPml")?.addEventListener("change", updateTaskPetugasOptions);
+      document.getElementById("kecamatan").addEventListener("change", updateDesaOptions);
+      document.getElementById("taskForm").addEventListener("submit", handleCreateTask);
+      updateTaskPetugasOptions();
+      attachDeleteHandlers("delete-task", deleteTask);
+    }
+
+    function updateTaskPetugasOptions() {
+      const pmlId = isAdmin()
+        ? document.getElementById("taskPml").value
+        : currentUser.pml_id;
+      const select = document.getElementById("taskPetugas");
+      const petugas = store.petugas.filter((item) => !pmlId || item.pml_id === pmlId);
+
+      select.innerHTML = `
+        <option value="">Pilih petugas</option>
+        ${petugas.map((item) => option(item.petugas_id, petugasLabel(item))).join("")}
+      `;
+    }
+
+    function updateDesaOptions() {
+      const kecamatan = document.getElementById("kecamatan").value;
+      const desa = DESA_ANAMBAS[kecamatan] || [];
+
+      document.getElementById("desa").innerHTML = `
+        <option value="">Pilih desa/kelurahan</option>
+        ${desa.map((item) => option(item, item)).join("")}
+      `;
+    }
+
+    async function handleCreateTask(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const payload = formValues(form);
+
+      if (!isAdmin()) {
+        payload.pml_id = currentUser.pml_id;
+      }
+
+      await submitMutation(form, "createTask", payload, "Wilayah kerja tersimpan.");
+    }
+
+    function renderPetugas(content) {
+      content.innerHTML = `
+        ${pageHead("Petugas", "Kelola petugas lapangan.", "")}
+        <section class="panel">
+          <form id="petugasForm">
+            <div class="panel-head">
+              <h2>Tambah Petugas</h2>
+            </div>
+            <div class="grid cols-3">
+              <div class="field ${isAdmin() ? "" : "hidden"}">
+                <label for="petugasPml">PML</label>
+                <select id="petugasPml" name="pml_id" ${isAdmin() ? "required" : ""}>
+                  <option value="">Pilih PML</option>
+                  ${store.pml.map((pml) => option(pml.pml_id, pml.nama_pml)).join("")}
+                </select>
+              </div>
+              <div class="field">
+                <label for="nama_petugas">Nama petugas</label>
+                <input id="nama_petugas" name="nama_petugas" required>
+              </div>
+              <div class="field">
+                <label for="telepon">Nomor telepon</label>
+                <input id="telepon" name="telepon">
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan Petugas</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>Daftar Petugas</h2>
+            <span class="fine">${store.petugas.length} aktif</span>
+          </div>
+          ${renderPetugasTable(store.petugas, true)}
+        </section>
+      `;
+
+      document.getElementById("petugasForm").addEventListener("submit", handleCreatePetugas);
+      attachDeleteHandlers("delete-petugas", deletePetugas);
+    }
+
+    async function handleCreatePetugas(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const payload = formValues(form);
+
+      if (!isAdmin()) {
+        payload.pml_id = currentUser.pml_id;
+      }
+
+      await submitMutation(form, "createPetugas", payload, "Petugas tersimpan.");
+    }
+
+    function renderAdmin(content) {
+      if (!isAdmin()) {
+        content.innerHTML = pageHead("Akses ditolak", "Halaman ini hanya untuk admin.", "");
+        return;
+      }
+
+      content.innerHTML = `
+        ${pageHead("Admin", "PML dan akun login.", "")}
+        <section class="grid cols-2">
+          <form id="pmlForm" class="panel">
+            <div class="panel-head">
+              <h2>Tambah PML</h2>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="nama_pml">Nama PML</label>
+                <input id="nama_pml" name="nama_pml" required>
+              </div>
+              <div class="field">
+                <label for="pmlTelepon">Nomor telepon</label>
+                <input id="pmlTelepon" name="telepon">
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan PML</button>
+            </div>
+          </form>
+
+          <form id="userForm" class="panel">
+            <div class="panel-head">
+              <h2>Buat Akun</h2>
+            </div>
+            <div class="grid cols-2">
+              <div class="field">
+                <label for="nama">Nama user</label>
+                <input id="nama" name="nama" required>
+              </div>
+              <div class="field">
+                <label for="usernameNew">Username</label>
+                <input id="usernameNew" name="username" autocomplete="off" required>
+              </div>
+              <div class="field">
+                <label for="passwordNew">Password awal</label>
+                <input id="passwordNew" name="password" type="password" minlength="6" autocomplete="new-password" required>
+              </div>
+              <div class="field">
+                <label for="role">Role</label>
+                <select id="role" name="role" required>
+                  <option value="pml">PML</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div id="userPmlField" class="field span-2">
+                <label for="userPml">PML</label>
+                <select id="userPml" name="pml_id" required>
+                  <option value="">Pilih PML</option>
+                  ${store.pml.map((pml) => option(pml.pml_id, pml.nama_pml)).join("")}
+                </select>
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Simpan Akun</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="grid cols-2" style="margin-top:16px">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Daftar PML</h2>
+              <span class="fine">${store.pml.length} aktif</span>
+            </div>
+            ${renderPmlTable(store.pml, true)}
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Daftar Akun</h2>
+              <span class="fine">${store.users.length} aktif</span>
+            </div>
+            ${renderUserTable(store.users)}
+          </div>
+        </section>
+      `;
+
+      document.getElementById("pmlForm").addEventListener("submit", handleCreatePml);
+      document.getElementById("userForm").addEventListener("submit", handleCreateUser);
+      document.getElementById("role").addEventListener("change", updateUserRoleField);
+      updateUserRoleField();
+      attachDeleteHandlers("delete-pml", deletePml);
+      attachDeleteHandlers("deactivate-user", deactivateUser);
+    }
+
+    function updateUserRoleField() {
+      const isPml = document.getElementById("role").value === "pml";
+      const field = document.getElementById("userPmlField");
+      const select = document.getElementById("userPml");
+
+      field.classList.toggle("hidden", !isPml);
+      select.required = isPml;
+      select.disabled = !isPml;
+    }
+
+    async function handleCreatePml(event) {
+      event.preventDefault();
+      await submitMutation(event.currentTarget, "createPml", formValues(event.currentTarget), "PML tersimpan.");
+    }
+
+    async function handleCreateUser(event) {
+      event.preventDefault();
+      await submitMutation(event.currentTarget, "createUser", formValues(event.currentTarget), "Akun tersimpan.");
+    }
+
+    function renderAccount(content) {
+      content.innerHTML = `
+        ${pageHead("Akun", "Ubah password login.", "")}
+        <section class="panel" style="max-width:520px">
+          <form id="passwordForm">
+            <div class="grid">
+              <div class="field">
+                <label for="current_password">Password lama</label>
+                <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
+              </div>
+              <div class="field">
+                <label for="new_password">Password baru</label>
+                <input id="new_password" name="new_password" type="password" minlength="6" autocomplete="new-password" required>
+              </div>
+            </div>
+            <div class="actions" style="margin-top:16px">
+              <button class="btn" type="submit">Ubah Password</button>
+            </div>
+          </form>
+        </section>
+      `;
+
+      document.getElementById("passwordForm").addEventListener("submit", handleChangePassword);
+    }
+
+    async function handleChangePassword(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+
+      await submitMutation(form, "changePassword", formValues(form), "Password diperbarui.", false);
+      form.reset();
+    }
+
+    async function submitMutation(form, functionName, payload, successMessage, rerender = true) {
+      setFormBusy(form, true);
+
+      try {
+        const response = await runServer(functionName, sessionToken, payload);
+
+        if (response.data) {
+          store = normalizeStore(response.data);
+        }
+
+        showToast(successMessage);
+
+        if (rerender) {
+          renderCurrentView();
+        }
+      } catch (error) {
+        handleError(error);
+      } finally {
+        setFormBusy(form, false);
+      }
+    }
+
+    async function deleteTask(id) {
+      await runDelete("deleteTask", id, "Wilayah kerja dinonaktifkan.");
+    }
+
+    async function deletePetugas(id) {
+      await runDelete("deletePetugas", id, "Petugas dinonaktifkan.");
+    }
+
+    async function deletePml(id) {
+      await runDelete("deletePml", id, "PML dinonaktifkan.");
+    }
+
+    async function deleteDailyReport(id) {
+      await runDelete("deleteDailyReport", id, "Laporan dinonaktifkan.");
+    }
+
+    async function deactivateUser(id) {
+      await runDelete("deactivateUser", id, "Akun dinonaktifkan.");
+    }
+
+    async function runDelete(functionName, id, successMessage) {
+      if (!confirm("Nonaktifkan data ini?")) {
+        return;
+      }
+
+      try {
+        const response = await runServer(functionName, sessionToken, id);
+
+        if (response.data) {
+          store = normalizeStore(response.data);
+        }
+
+        showToast(successMessage);
+        renderCurrentView();
+      } catch (error) {
+        handleError(error);
+      }
+    }
+
+    async function refreshData() {
+      const button = document.getElementById("refreshButton");
+      button.disabled = true;
+
+      try {
+        const response = await runServer("getBootstrapData", sessionToken);
+        currentUser = response.user;
+        store = normalizeStore(response.data);
+        renderShell();
+        showToast("Data diperbarui.");
+      } catch (error) {
+        handleError(error);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function handleLogout() {
+      try {
+        await runServer("logout", sessionToken);
+      } catch (error) {
+        // Logout lokal tetap dilanjutkan.
+      }
+
+      sessionStorage.removeItem("se2026_session_token");
+      sessionToken = "";
+      currentUser = null;
+      store = emptyStore();
+      renderLogin(false);
+    }
+
+    function renderTaskTable(tasks, withActions, filters) {
+      if (!tasks.length) {
+        return emptyState("Belum ada wilayah kerja.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Kecamatan</th>
+                <th>Desa</th>
+                <th>SLS/RT</th>
+                <th>PML</th>
+                <th>Petugas</th>
+                <th>Periode</th>
+                <th>Target</th>
+                <th>Tercacah</th>
+                <th>Progress</th>
+                ${withActions ? "<th>Aksi</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${tasks.map((task, index) => {
+                const total = getTaskTotal(task.task_id, filters || {});
+                const progress = getTaskProgress(task, filters || {});
+
+                return `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(task.kecamatan)}</td>
+                    <td>${escapeHtml(task.desa)}</td>
+                    <td>${escapeHtml(task.sls)}</td>
+                    <td>${escapeHtml(pmlName(task.pml_id))}</td>
+                    <td>${escapeHtml(petugasName(task.petugas_id))}</td>
+                    <td>${escapeHtml(task.mulai)} s.d. ${escapeHtml(task.selesai)}</td>
+                    <td>${numberText(task.target)}</td>
+                    <td>${numberText(total)}</td>
+                    <td>${progressMarkup(progress)}</td>
+                    ${withActions ? `<td><button class="btn danger" type="button" data-delete-task="${escapeHtml(task.task_id)}">Nonaktifkan</button></td>` : ""}
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderReportTable(reports, withActions) {
+      if (!reports.length) {
+        return emptyState("Belum ada laporan harian.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>Wilayah</th>
+                <th>PML</th>
+                <th>Petugas</th>
+                <th>Muatan</th>
+                <th>Catatan</th>
+                ${withActions ? "<th>Aksi</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${reports.map((report, index) => {
+                const task = getTaskById(report.task_id);
+
+                return `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(report.tanggal)}</td>
+                    <td>${escapeHtml(task ? taskLabel(task) : "-")}</td>
+                    <td>${escapeHtml(task ? pmlName(task.pml_id) : "-")}</td>
+                    <td>${escapeHtml(task ? petugasName(task.petugas_id) : "-")}</td>
+                    <td>${numberText(report.muatan_harian)}</td>
+                    <td>${escapeHtml(report.catatan || "-")}</td>
+                    ${withActions ? `<td><button class="btn danger" type="button" data-delete-report="${escapeHtml(report.report_id)}">Nonaktifkan</button></td>` : ""}
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderPetugasTable(petugas, withActions) {
+      if (!petugas.length) {
+        return emptyState("Belum ada petugas.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>PML</th>
+                <th>Telepon</th>
+                ${withActions ? "<th>Aksi</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${petugas.map((item, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${escapeHtml(item.nama_petugas)}</td>
+                  <td>${escapeHtml(pmlName(item.pml_id))}</td>
+                  <td>${escapeHtml(item.telepon || "-")}</td>
+                  ${withActions ? `<td><button class="btn danger" type="button" data-delete-petugas="${escapeHtml(item.petugas_id)}">Nonaktifkan</button></td>` : ""}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderPmlTable(pml, withActions) {
+      if (!pml.length) {
+        return emptyState("Belum ada PML.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table style="min-width:560px">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Telepon</th>
+                ${withActions ? "<th>Aksi</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${pml.map((item, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${escapeHtml(item.nama_pml)}</td>
+                  <td>${escapeHtml(item.telepon || "-")}</td>
+                  ${withActions ? `<td><button class="btn danger" type="button" data-delete-pml="${escapeHtml(item.pml_id)}">Nonaktifkan</button></td>` : ""}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderUserTable(users) {
+      if (!users.length) {
+        return emptyState("Belum ada akun.");
+      }
+
+      return `
+        <div class="table-wrap">
+          <table style="min-width:640px">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>PML</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${users.map((user, index) => `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${escapeHtml(user.nama)}</td>
+                  <td>${escapeHtml(user.username)}</td>
+                  <td>${escapeHtml(user.role)}</td>
+                  <td>${escapeHtml(user.pml_id ? pmlName(user.pml_id) : "-")}</td>
+                  <td>
+                    ${user.user_id === currentUser.user_id
+                      ? `<span class="fine">Sedang login</span>`
+                      : `<button class="btn danger" type="button" data-deactivate-user="${escapeHtml(user.user_id)}">Nonaktifkan</button>`
+                    }
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderChart(tasks, filters) {
+      const canvas = document.getElementById("progressChart");
+
+      if (!canvas || typeof Chart === "undefined") {
+        return;
+      }
+
+      const dailyMap = {};
+      const taskIds = {};
+
+      tasks.forEach((task) => {
+        taskIds[task.task_id] = true;
+      });
+
+      store.reports.forEach((report) => {
+        if (!taskIds[report.task_id]) {
+          return;
+        }
+
+        if (filters.tanggal && report.tanggal !== filters.tanggal) {
+          return;
+        }
+
+        dailyMap[report.tanggal] = (dailyMap[report.tanggal] || 0) + asNumber(report.muatan_harian);
+      });
+
+      const labels = Object.keys(dailyMap).sort();
+      const values = labels.map((date) => dailyMap[date]);
+
+      progressChart = new Chart(canvas, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Muatan harian",
+            data: values,
+            borderColor: "#dd620a",
+            backgroundColor: "rgba(221, 98, 10, 0.18)",
+            tension: 0.28,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    function getFilteredTasks(filters) {
+      return store.tasks.filter((task) => {
+        const matchPml = !filters.pml_id || task.pml_id === filters.pml_id;
+        const matchPetugas = !filters.petugas_id || task.petugas_id === filters.petugas_id;
+
+        if (!matchPml || !matchPetugas) {
+          return false;
+        }
+
+        if (filters.tanggal) {
+          return store.reports.some((report) => report.task_id === task.task_id && report.tanggal === filters.tanggal);
+        }
+
+        return true;
+      });
+    }
+
+    function getVisibleReports(filters) {
+      const visibleTaskIds = {};
+
+      getFilteredTasks(filters).forEach((task) => {
+        visibleTaskIds[task.task_id] = true;
+      });
+
+      return store.reports
+        .filter((report) => visibleTaskIds[report.task_id])
+        .filter((report) => !filters.tanggal || report.tanggal === filters.tanggal)
+        .sort((a, b) => String(b.tanggal).localeCompare(String(a.tanggal)) || String(b.created_at).localeCompare(String(a.created_at)));
+    }
+
+    function getTaskReports(taskId, filters) {
+      return store.reports.filter((report) => {
+        return report.task_id === taskId && (!filters.tanggal || report.tanggal === filters.tanggal);
+      });
+    }
+
+    function getTaskTotal(taskId, filters) {
+      return getTaskReports(taskId, filters || {}).reduce((sum, report) => sum + asNumber(report.muatan_harian), 0);
+    }
+
+    function getTaskProgress(task, filters) {
+      const target = asNumber(task.target);
+
+      if (target <= 0) {
+        return 0;
+      }
+
+      return Math.min(100, Math.round((getTaskTotal(task.task_id, filters || {}) / target) * 100));
+    }
+
+    function getSummary(tasks, filters) {
+      const totalTarget = tasks.reduce((sum, task) => sum + asNumber(task.target), 0);
+      const totalTercacah = tasks.reduce((sum, task) => sum + getTaskTotal(task.task_id, filters), 0);
+      const sisa = Math.max(totalTarget - totalTercacah, 0);
+      const progress = totalTarget <= 0 ? 0 : Math.round((totalTercacah / totalTarget) * 100);
+
+      return {
+        totalTarget,
+        totalTercacah,
+        sisa,
+        progress
+      };
+    }
+
+    function getPetugasForFilter(pmlId) {
+      return store.petugas.filter((petugas) => !pmlId || petugas.pml_id === pmlId);
+    }
+
+    function getTaskById(taskId) {
+      return store.tasks.find((task) => task.task_id === taskId);
+    }
+
+    function pmlName(pmlId) {
+      const pml = store.pml.find((item) => item.pml_id === pmlId);
+      return pml ? pml.nama_pml : "-";
+    }
+
+    function petugasName(petugasId) {
+      const petugas = store.petugas.find((item) => item.petugas_id === petugasId);
+      return petugas ? petugas.nama_petugas : "-";
+    }
+
+    function petugasLabel(petugas) {
+      return isAdmin()
+        ? `${petugas.nama_petugas} (${pmlName(petugas.pml_id)})`
+        : petugas.nama_petugas;
+    }
+
+    function taskLabel(task) {
+      return `${task.kecamatan} - ${task.desa} - ${task.sls}`;
+    }
+
+    function metric(label, value) {
+      return `
+        <div class="metric">
+          <span class="fine">${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+          <span class="muted">Aktif</span>
+        </div>
+      `;
+    }
+
+    function summaryRow(label, value) {
+      return `
+        <div class="summary-row">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `;
+    }
+
+    function progressMarkup(progress) {
+      return `
+        <div class="progress">
+          <div class="progress-track">
+            <div class="progress-fill" style="width:${progress}%"></div>
+          </div>
+          <span class="fine">${progress}%</span>
+        </div>
+      `;
+    }
+
+    function footerMarkup() {
+      return `
+        <footer class="app-footer">
+          Webmon v1.2. Tim IPDS BPS Kabupaten Kepulauan Anambas. Narahubung:
+          <a href="mailto:rafirizha@bps.go.id">rafirizha@bps.go.id</a>
+        </footer>
+      `;
+    }
+
+    function logoMarkup() {
+      return `
+        <div class="brand-mark">
+          <img src="${WEBMON_LOGO_SRC}" alt="Logo Webmon">
+        </div>
+      `;
+    }
+
+    function pageHead(title, subtitle, actions) {
+      return `
+        <header class="page-head">
+          <div class="page-title">
+            <h1>${escapeHtml(title)}</h1>
+            <p class="muted">${escapeHtml(subtitle)}</p>
+          </div>
+          <div class="actions">${actions || ""}</div>
+        </header>
+      `;
+    }
+
+    function emptyState(message) {
+      return `<div class="empty">${escapeHtml(message)}</div>`;
+    }
+
+    function option(value, label, selectedValue) {
+      const selected = selectedValue !== undefined && String(value) === String(selectedValue)
+        ? "selected"
+        : "";
+
+      return `<option value="${escapeHtml(value)}" ${selected}>${escapeHtml(label)}</option>`;
+    }
+
+    function formValues(form) {
+      const payload = {};
+      const data = new FormData(form);
+
+      data.forEach((value, key) => {
+        payload[key] = value;
+      });
+
+      return payload;
+    }
+
+    function setFormBusy(form, busy) {
+      form.querySelectorAll("button, input, select, textarea").forEach((field) => {
+        field.disabled = busy;
+      });
+    }
+
+    function attachDeleteHandlers(attribute, handler) {
+      document.querySelectorAll(`[data-${attribute}]`).forEach((button) => {
+        button.addEventListener("click", () => handler(button.dataset[toDatasetKey(attribute)]));
+      });
+    }
+
+    function toDatasetKey(attribute) {
+      return attribute.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    }
+
+    function normalizeStore(data) {
+      return {
+        pml: (data && data.pml) || [],
+        petugas: (data && data.petugas) || [],
+        tasks: (data && data.tasks) || [],
+        reports: (data && data.reports) || [],
+        users: (data && data.users) || []
+      };
+    }
+
+    function emptyStore() {
+      return {
+        pml: [],
+        petugas: [],
+        tasks: [],
+        reports: [],
+        users: []
+      };
+    }
+
+    function isAdmin() {
+      return currentUser && currentUser.role === "admin";
+    }
+
+    function asNumber(value) {
+      const number = Number(value);
+      return isFinite(number) ? number : 0;
+    }
+
+    function numberText(value) {
+      return asNumber(value).toLocaleString("id-ID");
+    }
+
+    function escapeHtml(value) {
+      return String(value === undefined || value === null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function destroyChart() {
+      if (progressChart) {
+        progressChart.destroy();
+        progressChart = null;
+      }
+    }
+
+    function showToast(message, type) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.className = `toast show ${type === "error" ? "error" : ""}`;
+
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.className = "toast";
+      }, 3600);
+    }
+
+    function handleError(error) {
+      const message = error && error.message ? error.message : "Terjadi kesalahan.";
+      showToast(message, "error");
+
+      if (message.toLowerCase().includes("sesi")) {
+        sessionStorage.removeItem("se2026_session_token");
+        sessionToken = "";
+        renderLogin(false);
+      }
+    }
+
+    function runServer(functionName, ...args) {
+      return new Promise((resolve, reject) => {
+        const runner = google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler((error) => {
+            reject(new Error(error && error.message ? error.message : String(error)));
+          });
+
+        runner[functionName](...args);
+      });
+    }
+</script>

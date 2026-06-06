@@ -63,7 +63,7 @@ const SHEET_HEADERS = {
   ]
 };
 
-# Segera ubah password admin dari menu `Akun`.
+// Segera ubah password admin dari menu `Akun`.
 
 const CACHE_TTL_SECONDS = 21600;
 const DEFAULT_ADMIN_USERNAME = "admin";
@@ -71,9 +71,14 @@ const DEFAULT_ADMIN_PASSWORD = "admin2026";
 
 function doGet() {
   return HtmlService
-    .createHtmlOutputFromFile("Index")
+    .createTemplateFromFile("Index")
+    .evaluate()
     .setTitle("Monitoring Petugas SE2026 KKA")
     .addMetaTag("viewport", "width=device-width, initial-scale=1");
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 function setupApp() {
