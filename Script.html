@@ -40,7 +40,7 @@
 
     async function init() {
       if (sessionToken) {
-        renderLogin(true);
+        renderSessionLoading();
 
         try {
           const response = await runServer("getBootstrapData", sessionToken);
@@ -57,6 +57,19 @@
       }
 
       renderLogin(false);
+    }
+
+    function renderSessionLoading() {
+      destroyChart();
+
+      document.getElementById("root").innerHTML = `
+        <main class="session-screen">
+          <section class="session-card" aria-live="polite">
+            <div class="session-spinner" aria-hidden="true"></div>
+            <p>Membuka dashboard...</p>
+          </section>
+        </main>
+      `;
     }
 
     function renderLogin(checkingSession) {
@@ -173,7 +186,19 @@
 
       document.getElementById("root").innerHTML = `
         <div class="app-shell">
-          <aside class="sidebar">
+          <header class="mobile-topbar">
+            <div class="brand">
+              ${logoMarkup()}
+              <span>Monitoring SE2026 <br> Kab. Kep. Anambas</span>
+            </div>
+            <button id="menuButton" class="menu-button" type="button" aria-label="Buka menu" aria-expanded="false">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </header>
+          <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Tutup menu"></button>
+          <aside id="sidebar" class="sidebar">
             <div>
               <div class="brand" style="margin-bottom:14px">
                 ${logoMarkup()}
@@ -193,7 +218,7 @@
               `).join("")}
             </nav>
             <div class="sidebar-actions">
-              <button id="refreshButton" class="btn secondary" type="button">Refresh</button>
+              <button id="refreshButton" class="btn secondary" type="button">Sinkronkan</button>
               <button id="logoutButton" class="btn secondary" type="button">Keluar</button>
             </div>
           </aside>
@@ -204,9 +229,25 @@
         </div>
       `;
 
+      const shell = document.querySelector(".app-shell");
+      const menuButton = document.getElementById("menuButton");
+      const sidebarBackdrop = document.getElementById("sidebarBackdrop");
+
+      function closeNavigation() {
+        shell.classList.remove("nav-open");
+        menuButton.setAttribute("aria-expanded", "false");
+      }
+
+      menuButton.addEventListener("click", () => {
+        const isOpen = shell.classList.toggle("nav-open");
+        menuButton.setAttribute("aria-expanded", String(isOpen));
+      });
+      sidebarBackdrop.addEventListener("click", closeNavigation);
+
       document.querySelectorAll("[data-view]").forEach((button) => {
         button.addEventListener("click", () => {
           currentView = button.dataset.view;
+          closeNavigation();
           renderShell();
         });
       });
@@ -823,7 +864,7 @@
         currentUser = response.user;
         store = normalizeStore(response.data);
         renderShell();
-        showToast("Data diperbarui.");
+        showToast("Data tersinkron.");
       } catch (error) {
         handleError(error);
       } finally {
