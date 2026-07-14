@@ -1,0 +1,18 @@
+# IDE & Editor
+.agent/
+.vs/
+.vscode/
+
+# Skill & Agent configs
+agent/skills/impeccable/
+
+# Documentation (local only)
+PRODUCT.md
+RANCANGAN_TINDAK_LANJUT.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
