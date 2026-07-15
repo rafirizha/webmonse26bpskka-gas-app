@@ -1,12 +1,14 @@
 # IDE & Editor
 .agent/
+.agents/
 .vs/
 .vscode/
 
 # Skill & Agent configs
 agent/skills/impeccable/
 
-# Documentation (local only)
+# Data (local only)
+data webmon/
 PRODUCT.md
 RANCANGAN_TINDAK_LANJUT.md
 
